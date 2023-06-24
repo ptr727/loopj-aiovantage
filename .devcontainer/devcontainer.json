@@ -1,0 +1,39 @@
+{
+    "name": "loopj/aiovantage",
+    "image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.11",
+    "postCreateCommand": "scripts/setup",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.black-formatter",
+                "ms-python.isort",
+                "ms-python.pylint",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "matangover.mypy"
+            ],
+            "settings": {
+                "files.eol": "\n",
+                "editor.tabSize": 4,
+                "python.pythonPath": "/usr/local/bin/python",
+                "python.linting.pylintEnabled": false,
+                "python.linting.pylintPath": "/usr/local/py-utils/bin/pylint",
+                "python.linting.mypyEnabled": true,
+                "python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
+                "python.linting.enabled": true,
+                "python.formatting.provider": "black",
+                "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+                "editor.formatOnSave": true,
+                "files.trimTrailingWhitespace": true,
+                "[markdown]": {
+                    "files.trimTrailingWhitespace": false
+                },
+                "[python]": {
+                    "editor.defaultFormatter": "ms-python.black-formatter",
+                    "editor.formatOnSave": true
+                }
+            }
+        }
+    },
+    "remoteUser": "vscode"
+}
