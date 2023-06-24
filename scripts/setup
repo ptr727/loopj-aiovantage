@@ -5,5 +5,6 @@ set -e
 cd "$(dirname "$0")/.."
 
 pip install --upgrade hatch
-# TODO: How to install dependencies only?
+# TODO: How to install dependencies only using hatch?
+pip install --upgrade xsdata typing_extensions
 hatch run lint:all
