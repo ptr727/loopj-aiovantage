@@ -1,31 +1,31 @@
 """Controller holding and managing Vantage blind groups."""
 
 from aiovantage.command_client.interfaces import BlindInterface
-from aiovantage.config_client.objects import Blind, BlindGroup
+from aiovantage.models import BlindBase, BlindGroup, BlindGroupBase
 from aiovantage.query import QuerySet
 
 from .base import BaseController
 
 
-class BlindGroupsController(BaseController[BlindGroup], BlindInterface):
+class BlindGroupsController(BaseController[BlindGroupBase], BlindInterface):
     """Controller holding and managing Vantage blind groups."""
 
-    # Fetch the following object types from Vantage
     vantage_types = (
         "BlindGroup",
         "Somfy.RS-485_Group_CHILD",
         "Somfy.URTSI_2_Group_CHILD",
     )
+    """The Vantage object types that this controller will fetch."""
 
-    def blinds(self, vid: int) -> QuerySet[Blind]:
+    def blinds(self, vid: int) -> QuerySet[BlindBase]:
         """Return a queryset of all blinds in this blind group."""
-
         blind_group = self[vid]
-        if blind_group.blind_ids is not None:
-            # Some blind groups have a list of blind ids, use that to filter
-            return self._vantage.blinds.filter(
-                lambda blind: blind.id in blind_group.blind_ids  # type: ignore[operator]
-            )
+        if isinstance(blind_group, BlindGroup):
+            # BlindGroup objects have a list of blind ids, so use that to filter
+            def _filter(blind: BlindBase) -> bool:
+                return blind.id in blind_group.blind_ids
 
-        # Otherwise, use the parent_id to filter
+            return self._vantage.blinds.filter(_filter)
+
+        # Otherwise, use the parent id to filter
         return self._vantage.blinds.filter(parent_id=blind_group.id)

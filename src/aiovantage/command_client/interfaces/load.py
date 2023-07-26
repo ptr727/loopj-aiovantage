@@ -1,7 +1,7 @@
 """Interface for querying and controlling loads."""
 
-from enum import Enum
-from typing import Sequence
+from enum import IntEnum
+from typing import Optional, Sequence
 
 from .base import Interface
 
@@ -9,7 +9,7 @@ from .base import Interface
 class LoadInterface(Interface):
     """Interface for querying and controlling loads."""
 
-    class RampType(Enum):
+    class RampType(IntEnum):
         """The type of ramp to perform."""
 
         STOP = 2
@@ -21,33 +21,37 @@ class LoadInterface(Interface):
         ADJUST = 8
 
     async def turn_on(
-        self, vid: int, transition: float = 0, level: float = 100
+        self,
+        vid: int,
+        transition: Optional[float] = None,
+        level: Optional[float] = None,
     ) -> None:
         """Turn on a load.
 
         Args:
             vid: The Vantage ID of the load.
-            transition: The time in seconds to transition to the new level.
-            level: The level to set the load to (0-100).
+            transition: The time in seconds to transition to the new level, defaults to immediate.
+            level: The level to set the load to (0-100), defaults to 100.
         """
+        if level is None:
+            level = 100
 
-        if transition:
-            await self.ramp(vid, level, transition)
-        else:
-            await self.set_level(vid, level)
+        if transition is None:
+            return await self.set_level(vid, level)
 
-    async def turn_off(self, vid: int, transition: float = 0) -> None:
+        await self.ramp(vid, level, transition)
+
+    async def turn_off(self, vid: int, transition: Optional[float] = None) -> None:
         """Turn off a load.
 
         Args:
             vid: The Vantage ID of the load.
             transition: The time in seconds to ramp the load down.
         """
+        if transition is None:
+            return await self.set_level(vid, 0)
 
-        if transition:
-            await self.ramp(vid, 0, transition)
-        else:
-            await self.set_level(vid, 0)
+        await self.ramp(vid, 0, transition)
 
     async def get_level(self, vid: int) -> float:
         """Get the level of a load.
@@ -58,7 +62,6 @@ class LoadInterface(Interface):
         Returns:
             The level of the load, as a percentage (0-100).
         """
-
         # INVOKE <id> Load.GetLevel
         # -> R:INVOKE <id> <level (0-100)> Load.GetLevel
         response = await self.invoke(vid, "Load.GetLevel")
@@ -73,7 +76,6 @@ class LoadInterface(Interface):
             vid: The Vantage ID of the load.
             level: The level to set the load to (0-100).
         """
-
         # Clamp level to 0-100
         level = max(min(level, 100), 0)
 
@@ -96,10 +98,9 @@ class LoadInterface(Interface):
             seconds: The number of seconds to ramp the load over.
             ramp_type: The type of ramp to perform.
         """
-
         # INVOKE <id> Load.Ramp <type> <seconds> <level>
         # -> R:INVOKE <id> <rcode> Load.Ramp <type> <seconds> <level>
-        await self.invoke(vid, "Load.Ramp", ramp_type.value, seconds, level)
+        await self.invoke(vid, "Load.Ramp", ramp_type, seconds, level)
 
     @classmethod
     def parse_load_status(cls, args: Sequence[str]) -> float:
@@ -111,7 +112,6 @@ class LoadInterface(Interface):
         Returns:
             The level of the load.
         """
-
         # STATUS LOAD
         # -> S:LOAD <id> <level (0-100)>
         return float(args[0])
@@ -126,10 +126,8 @@ class LoadInterface(Interface):
         Returns:
             The level of the load.
         """
-
         # ELLOG STATUS ON
         # -> EL: <id> Load.GetLevel <level (0-100000)>
-
         # ADDSTATUS <id>
         # -> S:STATUS <id> Load.GetLevel <level (0-100000)>
         return float(args[0]) / 1000
