@@ -41,6 +41,7 @@ class EventType(Enum):
     DISCONNECTED = "disconnect"
     RECONNECTED = "reconnect"
     STATUS = "status"
+    LOG = "log"
     ENHANCED_LOG = "enhanced_log"
 
 
@@ -143,6 +144,7 @@ class EventStream:
             self._tasks.append(asyncio.create_task(self._command_handler()))
             self._tasks.append(asyncio.create_task(self._keepalive()))
 
+            self._logger.debug("Started the event stream")
             self._started = True
 
     def stop(self) -> None:
@@ -151,6 +153,8 @@ class EventStream:
             task.cancel()
         self._tasks.clear()
         self._connection.close()
+
+        self._logger.debug("Stopped the event stream")
         self._started = False
 
     async def get_connection(self) -> CommandConnection:
@@ -161,7 +165,7 @@ class EventStream:
                 await self._connection.open()
 
                 # Authenticate the new connection if we have credentials
-                if self._username is not None and self._password is not None:
+                if self._username and self._password:
                     await self._send(f"LOGIN {self._username} {self._password}")
 
             return self._connection
@@ -365,7 +369,9 @@ class EventStream:
     def _parse_message(self, message: str) -> None:
         # Parse a message from the Host Command service.
         if message.startswith("S:"):
-            # Parse a "Status" message
+            # Parse a "status" message, of the form "S:<type> <id> <args>"
+            # These messages are emitted when the state of an object changes after
+            # subscribing to updates via "STATUS <type>" or "ADDSTATUS <vid>".
             status_type, id_str, *args = tokenize_response(message)
             self.emit(
                 {
@@ -376,7 +382,9 @@ class EventStream:
                 }
             )
         elif message.startswith("EL:"):
-            # Parse an "Enhanced Log" message
+            # Parse an "enhanced log" message, of the form "EL:<log>"
+            # These messages are emitted when an enhanced log is received after
+            # subscribing to updates via "ELLOG <type>".
             self.emit({"type": EventType.ENHANCED_LOG, "log": message[4:]})
         elif message.startswith("R:ERROR"):
             self._logger.error("Error message from EventStream: %s", message)

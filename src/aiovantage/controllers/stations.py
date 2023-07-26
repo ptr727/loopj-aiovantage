@@ -1,7 +1,8 @@
 """Controller holding and managing Vantage stations."""
 
-from aiovantage.config_client.objects import StationObject
-from aiovantage.controllers.base import BaseController
+from aiovantage.models import StationObject
+
+from .base import BaseController
 
 
 class StationsController(BaseController[StationObject]):
@@ -14,5 +15,6 @@ class StationsController(BaseController[StationObject]):
         "EqUX",
         "Keypad",
         "ScenePointRelay",
+        "Vantage.DmxDaliGateway",
     )
     """The Vantage object types that this controller will fetch."""

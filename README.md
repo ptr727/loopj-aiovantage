@@ -55,13 +55,16 @@ The following interfaces/controllers are currently supported.
 | LightSensor   | Light sensors         | `vantage.light_sensors`       | [Examples](examples/light_sensors)        |
 | Load          | Lights, relays, etc   | `vantage.loads`               | [Examples](examples/loads)                |
 | LoadGroup     | Groups of loads       | `vantage.load_groups`         | [Examples](examples/load_groups)          |
+| Master        | Vantage controllers   | `vantage.masters`             | [Examples](examples/masters)              |
+| Module        | Dimmer modules        | `vantage.modules`             |                                           |
 | OmniSensor    | Power, current, etc   | `vantage.omni_sensors`        | [Examples](examples/omni_sensors)         |
+| PowerProfile  | Load power profiles   | `vantage.power_profiles`      | [Examples](examples/power_profiles)       |
 | RGBLoad       | RGB lights            | `vantage.rgb_loads`           | [Examples](examples/rgb_loads)            |
 | Stations      | Keypads, etc          | `vantage.stations`            | [Examples](examples/stations)             |
 | Tasks         | Vantage tasks         | `vantage.tasks`               | [Examples](examples/tasks)                |
 | Temperature   | Temperature sensors   | `vantage.temperature_sensors` | [Examples](examples/temperature_sensors)  |
 
-If you have an object that you expect to show up in one of these controllers, but it is missing, please let me know in an issue.
+If you have an object that you expect to show up in one of these controllers but is missing, please [create an issue](issues) or [submit a pull request](CONTRIBUTING.md#-adding-support-for-new-devices).
 
 ## Installation
 

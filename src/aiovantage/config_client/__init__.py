@@ -29,11 +29,12 @@ from xsdata.formats.dataclass.parsers.handlers import XmlEventHandler
 from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 
-from aiovantage.config_client.methods import Call, Method, Return
-from aiovantage.config_client.methods.introspection import GetVersion
-from aiovantage.config_client.methods.login import Login
 from aiovantage.connection import BaseConnection
 from aiovantage.errors import ClientResponseError, LoginFailedError, LoginRequiredError
+
+from .interfaces import Call, Method, Return
+from .interfaces.introspection import GetVersion
+from .interfaces.login import Login
 
 
 class ConfigConnection(BaseConnection):
@@ -128,7 +129,7 @@ class ConfigClient:
             + self._serializer.render(method)
             + f"</{method.interface}>"
         )
-        self._logger.debug(request)
+        self._logger.debug("Sending request: %s", request)
 
         # Send the request and read the response
         async with self._request_lock:
@@ -136,7 +137,7 @@ class ConfigClient:
             response = await conn.readuntil(
                 f"</{method.interface}>\n".encode(), timeout=self._read_timeout
             )
-        self._logger.debug(response)
+        self._logger.debug("Received response: %s", response)
 
         # Parse the XML doc
         root = ElementTree.fromstring(response)
@@ -173,7 +174,7 @@ class ConfigClient:
                 await self._connection.open()
 
                 # Ensure the connection is authenticated, if required
-                if self._username is not None and self._password is not None:
+                if self._username and self._password:
                     # Log in if we have credentials
                     success = await self.request(
                         Login,

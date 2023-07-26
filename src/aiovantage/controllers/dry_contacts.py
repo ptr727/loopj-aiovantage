@@ -5,7 +5,7 @@ from typing import Sequence
 from typing_extensions import override
 
 from aiovantage.command_client.interfaces import ButtonInterface
-from aiovantage.config_client.objects import DryContact
+from aiovantage.models import DryContact
 
 from .base import BaseController, State
 
@@ -18,6 +18,14 @@ class DryContactsController(BaseController[DryContact], ButtonInterface):
 
     status_types = ("BTN",)
     """Which Vantage 'STATUS' types this controller handles, if any."""
+
+    @override
+    async def fetch_object_state(self, _vid: int) -> State:
+        """Fetch the state properties of a dry contact."""
+        return {
+            # Dry contacts are momentary, so default to not pressed to avoid a lookup
+            "triggered": False,
+        }
 
     @override
     def parse_object_update(self, _vid: int, status: str, args: Sequence[str]) -> State:

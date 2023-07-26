@@ -141,3 +141,12 @@ class QuerySet(Iterable[T], AsyncIterator[T]):
         """Asynchronously get the first object that matches the given filter."""
         await self.__populate()
         return self.get(*args, **kwargs)
+
+    def first(self) -> Optional[T]:
+        """Return the first object in the queryset."""
+        return next(iter(self), None)
+
+    async def afirst(self) -> Optional[T]:
+        """Asynchronously return the first object in the queryset."""
+        await self.__populate()
+        return self.first()
