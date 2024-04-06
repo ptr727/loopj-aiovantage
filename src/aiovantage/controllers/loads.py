@@ -1,14 +1,14 @@
 """Controller holding and managing Vantage loads."""
 
-from typing import Sequence
+from decimal import Decimal
 
 from typing_extensions import override
 
-from aiovantage.command_client.interfaces import LoadInterface
+from aiovantage.command_client.object_interfaces import LoadInterface
 from aiovantage.models import Load
 from aiovantage.query import QuerySet
 
-from .base import BaseController, State
+from .base import BaseController
 
 
 class LoadsController(BaseController[Load], LoadInterface):
@@ -21,21 +21,27 @@ class LoadsController(BaseController[Load], LoadInterface):
     """Which Vantage 'STATUS' types this controller handles, if any."""
 
     @override
-    async def fetch_object_state(self, vid: int) -> State:
+    async def fetch_object_state(self, vid: int) -> None:
         """Fetch the state properties of a load."""
-        return {
+        state = {
             "level": await LoadInterface.get_level(self, vid),
         }
 
-    @override
-    def parse_object_update(self, _vid: int, status: str, args: Sequence[str]) -> State:
-        """Handle state changes for a load."""
-        if status != "LOAD":
-            return None
+        self.update_state(vid, state)
 
-        return {
-            "level": LoadInterface.parse_load_status(args),
+    @override
+    def handle_status(self, vid: int, status: str, *args: str) -> None:
+        """Handle simple status messages from the event stream."""
+        if status != "LOAD":
+            return
+
+        # STATUS LOAD
+        # -> S:LOAD <id> <level (0-100)>
+        state = {
+            "level": Decimal(args[0]),
         }
+
+        self.update_state(vid, state)
 
     @property
     def is_on(self) -> QuerySet[Load]:

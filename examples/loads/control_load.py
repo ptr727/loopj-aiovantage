@@ -6,8 +6,8 @@ import logging
 import sys
 import termios
 import tty
+from collections.abc import Iterator
 from contextlib import contextmanager, suppress
-from typing import Iterator, Optional
 
 from aiovantage import Vantage
 
@@ -20,7 +20,7 @@ parser.add_argument("--debug", help="enable debug logging", action="store_true")
 args = parser.parse_args()
 
 
-def parse_keypress() -> Optional[str]:
+def parse_keypress() -> str | None:
     """Rudimentary keypress parser."""
     char = sys.stdin.read(1)
     if char == "\x1b":
@@ -85,12 +85,12 @@ async def main() -> None:
 
                 if key == "KEY_UP":
                     # Increase the load's brightness
-                    await vantage.loads.ramp(load.id, level + 10, 1)
+                    await vantage.loads.ramp(load.id, level=level + 10, time=1)
                     print(f"Increased '{load.name}' brightness to {load.level}%")
 
                 elif key == "KEY_DOWN":
                     # Decrease the load's brightness
-                    await vantage.loads.ramp(load.id, level - 10, 1)
+                    await vantage.loads.ramp(load.id, level=level - 10, time=1)
                     print(f"Decreased '{load.name}' brightness to {load.level}%")
 
                 elif key == " ":

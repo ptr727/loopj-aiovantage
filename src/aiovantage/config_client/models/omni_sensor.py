@@ -3,10 +3,9 @@
 from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import Enum
-from typing import Union
 
-from .child_object import ChildObject
 from .sensor import Sensor
+from .types import Parent
 
 
 class ConversionType(Enum):
@@ -61,8 +60,14 @@ class GetMethodType:
 
 
 @dataclass
-class OmniSensor(ChildObject, Sensor):
+class OmniSensor(Sensor):
     """OmniSensor object."""
+
+    parent: Parent = field(
+        metadata={
+            "name": "Parent",
+        }
+    )
 
     get: GetMethodType = field(
         metadata={
@@ -70,7 +75,7 @@ class OmniSensor(ChildObject, Sensor):
         }
     )
 
-    level: Union[int, Decimal, None] = field(
+    level: int | Decimal | None = field(
         default=None,
         metadata={
             "type": "Ignore",

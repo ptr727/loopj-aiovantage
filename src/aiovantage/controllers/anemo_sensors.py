@@ -1,37 +1,48 @@
 """Controller holding and managing Vantage anemo (wind) sensors."""
 
-from typing import Sequence
+from decimal import Decimal
 
 from typing_extensions import override
 
-from aiovantage.command_client.interfaces import AnemoSensorInterface
+from aiovantage.command_client.object_interfaces import (
+    AnemoSensorInterface,
+    SensorInterface,
+)
 from aiovantage.models import AnemoSensor
 
-from .base import BaseController, State
+from .base import BaseController
 
 
-class AnemoSensorsController(BaseController[AnemoSensor], AnemoSensorInterface):
+class AnemoSensorsController(
+    BaseController[AnemoSensor], AnemoSensorInterface, SensorInterface
+):
     """Controller holding and managing Vantage anemo (wind) sensors."""
 
     vantage_types = ("AnemoSensor",)
     """The Vantage object types that this controller will fetch."""
 
-    enhanced_log_status_methods = ("AnemoSensor.GetSpeed",)
-    """Which status methods this controller handles from the Enhanced Log."""
+    status_types = ("WIND",)
+    """Which Vantage 'STATUS' types this controller handles, if any."""
 
     @override
-    async def fetch_object_state(self, vid: int) -> State:
+    async def fetch_object_state(self, vid: int) -> None:
         """Fetch the state properties of an anemo sensor."""
-        return {
+        state = {
             "speed": await AnemoSensorInterface.get_speed(self, vid),
         }
 
-    @override
-    def parse_object_update(self, _vid: int, status: str, args: Sequence[str]) -> State:
-        """Handle state changes for an anemo sensor."""
-        if status != "AnemoSensor.GetSpeed":
-            return None
+        self.update_state(vid, state)
 
-        return {
-            "speed": AnemoSensorInterface.parse_get_speed_status(args),
+    @override
+    def handle_status(self, vid: int, status: str, *args: str) -> None:
+        """Handle simple status message from the event stream."""
+        if status != "WIND":
+            return
+
+        # STATUS WIND
+        # -> S:WIND <id> <wind_speed>
+        state = {
+            "speed": Decimal(args[0]),
         }
+
+        self.update_state(vid, state)

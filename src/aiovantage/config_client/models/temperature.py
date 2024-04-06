@@ -2,17 +2,39 @@
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Optional
+from enum import Enum
 
-from .child_object import ChildObject
 from .sensor import Sensor
+from .types import Parent
 
 
-@dataclass
-class Temperature(ChildObject, Sensor):
+@dataclass(kw_only=True)
+class Temperature(Sensor):
     """Temperature object."""
 
-    value: Optional[Decimal] = field(
+    class Setpoint(Enum):
+        """Setpoint type."""
+
+        HEAT = "Heat"
+        COOL = "Cool"
+        AUTO = "Auto"
+
+    # Not available in 2.x firmware
+    setpoint: Setpoint | None = field(
+        default=None,
+        metadata={
+            "name": "Setpoint",
+            "type": "Attribute",
+        },
+    )
+
+    parent: Parent = field(
+        metadata={
+            "name": "Parent",
+        }
+    )
+
+    value: Decimal | None = field(
         default=None,
         metadata={
             "type": "Ignore",

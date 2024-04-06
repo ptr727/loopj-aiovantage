@@ -21,22 +21,28 @@ class PowerProfile(SystemObject):
         }
     )
 
-    adjust: int = field(
+    # Not available in 2.x firmware
+    adjust: int | None = field(
+        default=None,
         metadata={
             "name": "Adjust",
-        }
+        },
     )
 
-    freq: int = field(
+    # Not available in 2.x firmware
+    freq: int | None = field(
+        default=None,
         metadata={
             "name": "Freq",
-        }
+        },
     )
 
-    inductive: bool = field(
+    # Not available in 2.x firmware
+    inductive: bool | None = field(
+        default=None,
         metadata={
             "name": "Inductive",
-        }
+        },
     )
 
     @property

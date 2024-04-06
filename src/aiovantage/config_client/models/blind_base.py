@@ -2,16 +2,15 @@
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Optional
 
 from .system_object import SystemObject
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BlindBase(SystemObject):
     """Blind base class."""
 
-    orientation: Optional[str] = field(
+    orientation: str | None = field(
         default=None,
         metadata={
             "name": "ShadeOrientation",
@@ -19,7 +18,7 @@ class BlindBase(SystemObject):
         },
     )
 
-    type: Optional[str] = field(
+    type: str | None = field(
         default=None,
         metadata={
             "name": "ShadeType",
@@ -27,7 +26,7 @@ class BlindBase(SystemObject):
         },
     )
 
-    position: Optional[Decimal] = field(
+    position: Decimal | None = field(
         default=None,
         metadata={
             "type": "Ignore",

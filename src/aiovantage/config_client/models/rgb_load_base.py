@@ -2,14 +2,13 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Tuple
 
-from .child_object import ChildObject
 from .location_object import LocationObject
+from .types import Parent
 
 
 @dataclass
-class RGBLoadBase(ChildObject, LocationObject):
+class RGBLoadBase(LocationObject):
     """RGB load base class."""
 
     class ColorType(Enum):
@@ -19,6 +18,12 @@ class RGBLoadBase(ChildObject, LocationObject):
         HSIC = "HSIC"
         CCT = "CCT"
         COLOR_CHANNEL = "Color Channel"
+
+    parent: Parent = field(
+        metadata={
+            "name": "Parent",
+        }
+    )
 
     color_type: ColorType = field(
         metadata={
@@ -38,35 +43,35 @@ class RGBLoadBase(ChildObject, LocationObject):
         }
     )
 
-    hsl: Optional[Tuple[int, int, int]] = field(
+    hsl: tuple[int, int, int] | None = field(
         default=None,
         metadata={
             "type": "Ignore",
         },
     )
 
-    rgb: Optional[Tuple[int, int, int]] = field(
+    rgb: tuple[int, int, int] | None = field(
         default=None,
         metadata={
             "type": "Ignore",
         },
     )
 
-    rgbw: Optional[Tuple[int, int, int, int]] = field(
+    rgbw: tuple[int, int, int, int] | None = field(
         default=None,
         metadata={
             "type": "Ignore",
         },
     )
 
-    level: Optional[int] = field(
+    level: int | None = field(
         default=None,
         metadata={
             "type": "Ignore",
         },
     )
 
-    color_temp: Optional[int] = field(
+    color_temp: int | None = field(
         default=None,
         metadata={
             "type": "Ignore",

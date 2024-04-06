@@ -1,15 +1,38 @@
 """Button object."""
 
 from dataclasses import dataclass, field
-from typing import Optional
 
-from .child_object import ChildObject
 from .system_object import SystemObject
+from .types import Parent
 
 
 @dataclass
-class Button(ChildObject, SystemObject):
+class Button(SystemObject):
     """Button object."""
+
+    parent: Parent = field(
+        metadata={
+            "name": "Parent",
+        }
+    )
+
+    down_id: int = field(
+        metadata={
+            "name": "Down",
+        }
+    )
+
+    up_id: int = field(
+        metadata={
+            "name": "Up",
+        }
+    )
+
+    hold_id: int = field(
+        metadata={
+            "name": "Hold",
+        }
+    )
 
     text1: str = field(
         metadata={
@@ -23,25 +46,7 @@ class Button(ChildObject, SystemObject):
         }
     )
 
-    up_id: int = field(
-        metadata={
-            "name": "Up",
-        }
-    )
-
-    down_id: int = field(
-        metadata={
-            "name": "Down",
-        }
-    )
-
-    hold_id: int = field(
-        metadata={
-            "name": "Hold",
-        }
-    )
-
-    pressed: Optional[bool] = field(
+    pressed: bool | None = field(
         default=None,
         metadata={
             "type": "Ignore",
