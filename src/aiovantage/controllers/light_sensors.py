@@ -1,37 +1,48 @@
 """Controller holding and managing Vantage light sensors."""
 
-from typing import Sequence
+from decimal import Decimal
 
 from typing_extensions import override
 
-from aiovantage.command_client.interfaces import LightSensorInterface
+from aiovantage.command_client.object_interfaces import (
+    LightSensorInterface,
+    SensorInterface,
+)
 from aiovantage.models import LightSensor
 
-from .base import BaseController, State
+from .base import BaseController
 
 
-class LightSensorsController(BaseController[LightSensor], LightSensorInterface):
+class LightSensorsController(
+    BaseController[LightSensor], LightSensorInterface, SensorInterface
+):
     """Controller holding and managing Vantage light sensors."""
 
     vantage_types = ("LightSensor",)
     """The Vantage object types that this controller will fetch."""
 
-    enhanced_log_status_methods = ("LightSensor.GetLevel",)
-    """Which status methods this controller handles from the Enhanced Log."""
+    status_types = ("LIGHT",)
+    """Which Vantage 'STATUS' types this controller handles, if any."""
 
     @override
-    async def fetch_object_state(self, vid: int) -> State:
+    async def fetch_object_state(self, vid: int) -> None:
         """Fetch the state properties of a light sensor."""
-        return {
+        state = {
             "level": await LightSensorInterface.get_level(self, vid),
         }
 
-    @override
-    def parse_object_update(self, _vid: int, status: str, args: Sequence[str]) -> State:
-        """Handle state changes for a light sensor."""
-        if status != "LightSensor.GetLevel":
-            return None
+        self.update_state(vid, state)
 
-        return {
-            "level": LightSensorInterface.parse_get_level_status(args),
+    @override
+    def handle_status(self, vid: int, status: str, *args: str) -> None:
+        """Handle simple status messages from the event stream."""
+        if status != "LIGHT":
+            return
+
+        # STATUS LIGHT
+        # -> S:LIGHT <id> <level>
+        state = {
+            "level": Decimal(args[0]),
         }
+
+        self.update_state(vid, state)

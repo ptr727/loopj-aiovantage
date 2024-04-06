@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from xsdata.models.datatype import XmlDateTime
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SystemObject:
     """Base class for all objects."""
 
@@ -23,22 +23,9 @@ class SystemObject:
         }
     )
 
-    mtime: XmlDateTime = field(
-        metadata={
-            "name": "MTime",
-            "type": "Attribute",
-        }
-    )
-
     name: str = field(
         metadata={
             "name": "Name",
-        }
-    )
-
-    note: str = field(
-        metadata={
-            "name": "Note",
         }
     )
 
@@ -48,8 +35,32 @@ class SystemObject:
         }
     )
 
-    display_name: str = field(
+    note: str = field(
         metadata={
-            "name": "DName",
+            "name": "Note",
         }
     )
+
+    # Not available in 2.x firmware
+    mtime: XmlDateTime | None = field(
+        default=None,
+        metadata={
+            "name": "MTime",
+            "type": "Attribute",
+        },
+    )
+
+    # Not available in 2.x firmware
+    display_name: str | None = field(
+        default=None,
+        metadata={
+            "name": "DName",
+        },
+    )
+
+    @property
+    def vantage_type(self) -> str:
+        """Return the Vantage type of the object."""
+        cls = type(self)
+        cls_meta = getattr(cls, "Meta", None)
+        return getattr(cls_meta, "name", cls.__qualname__)

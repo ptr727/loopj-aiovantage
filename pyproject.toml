@@ -7,7 +7,7 @@ name = "aiovantage"
 dynamic = ["version"]
 description = "Interact with and control Vantage InFusion home automation controllers."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = "MIT"
 authors = [
     {name = "James Smith", email = "james@loopj.com"},
@@ -20,7 +20,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "xsdata==23.7",
+    "xsdata==23.8",
     "typing_extensions>=4.6.3,<5.0",
 ]
 
@@ -31,17 +31,17 @@ Source = "https://github.com/loopj/aiovantage"
 
 [project.optional-dependencies]
 dev = [
-    "black==23.7.0",
-    "mypy==1.4.1",
-    "ruff==0.0.280",
-    "pre-commit==3.3.3",
+    "black==23.10.1",
+    "mypy==1.6.1",
+    "ruff==0.1.3",
+    "pre-commit==3.5.0",
 ]
 
 [tool.hatch.version]
 path = "src/aiovantage/__about__.py"
 
 [[tool.hatch.envs.all.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11"]
+python = ["3.10", "3.11"]
 
 [tool.hatch.envs.dev]
 features = ["dev"]
@@ -64,11 +64,11 @@ typing = "mypy {args:.}"
 strict = true
 
 [tool.black]
-target-version = ["py38"]
+target-version = ["py310"]
 skip-string-normalization = true
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py310"
 select = [
     "F",    # pyflakes
     "E",    # pycodestyle errors

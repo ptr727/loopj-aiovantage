@@ -2,16 +2,21 @@
 
 import asyncio
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from ssl import SSLContext
 from types import TracebackType
-from typing import List, Optional, Type, Union
 
 from typing_extensions import Self
 
 from aiovantage.connection import BaseConnection
-from aiovantage.errors import CommandError, LoginFailedError, LoginRequiredError
+from aiovantage.errors import (
+    CommandError,
+    InvalidObjectError,
+    LoginFailedError,
+    LoginRequiredError,
+)
 
 from .utils import encode_params, tokenize_response
 
@@ -28,29 +33,8 @@ class CommandResponse:
     """Wrapper for command responses."""
 
     command: str
-    args: List[str]
-    data: List[str]
-
-    def __init__(self, data: List[str]) -> None:
-        """Initialize a CommandResponse."""
-        self.data, return_line = data[:-1], data[-1]
-        command, *self.args = tokenize_response(return_line)
-        self.command = command[2:]
-
-
-@dataclass
-class InvokeResponse:
-    """Wrapper for invoke command responses."""
-
-    vid: int
-    result: str
-    method: str
-    args: List[str]
-
-    def __init__(self, data: List[str]) -> None:
-        """Initialize an InvokeResponse."""
-        _, vid_str, self.result, self.method, *self.args = tokenize_response(data[0])
-        self.vid = int(vid_str)
+    args: Sequence[str]
+    data: Sequence[str]
 
 
 class CommandClient:
@@ -59,11 +43,11 @@ class CommandClient:
     def __init__(
         self,
         host: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
         *,
-        ssl: Union[SSLContext, bool] = True,
-        port: Optional[int] = None,
+        ssl: SSLContext | bool = True,
+        port: int | None = None,
         conn_timeout: float = 30,
         read_timeout: float = 60,
     ) -> None:
@@ -82,9 +66,9 @@ class CommandClient:
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         """Exit context manager."""
         self.close()
@@ -98,9 +82,9 @@ class CommandClient:
     async def command(
         self,
         command: str,
-        *params: Union[str, int, float, Decimal],
+        *params: str | int | float | Decimal,
         force_quotes: bool = False,
-        connection: Optional[CommandConnection] = None,
+        connection: CommandConnection | None = None,
     ) -> CommandResponse:
         """Send a command to the Host Command service and wait for a response.
 
@@ -113,47 +97,19 @@ class CommandClient:
         Returns:
             A CommandResponse instance.
         """
+        # Build the request
+        request = command
         if params:
-            request = f"{command} {encode_params(*params, force_quotes=force_quotes)}"
-        else:
-            request = command
+            request += f" {encode_params(*params, force_quotes=force_quotes)}"
 
         # Send the request and parse the response
-        raw_response = await self.raw_request(request, connection=connection)
-        return CommandResponse(raw_response)
-
-    async def invoke(
-        self,
-        vid: int,
-        method: str,
-        *params: Union[str, int, float, Decimal],
-        force_quotes: bool = False,
-        connection: Optional[CommandConnection] = None,
-    ) -> InvokeResponse:
-        """Invoke a method on an object, and wait for a response.
-
-        Args:
-            vid: The VID of the object to invoke the command on.
-            method: The method to invoke.
-            params: The parameters to send with the method.
-            force_quotes: Whether to force string params to be wrapped in double quotes.
-            connection: The connection to use, if not the default.
-
-        Returns:
-            A InvokeResponse instance.
-        """
-        if params:
-            request = f"INVOKE {vid} {method} {encode_params(*params, force_quotes=force_quotes)}"
-        else:
-            request = f"INVOKE {vid} {method}"
-
-        # Send the request and parse the response
-        raw_response = await self.raw_request(request, connection=connection)
-        return InvokeResponse(raw_response)
+        *data, return_line = await self.raw_request(request, connection=connection)
+        command, *args = tokenize_response(return_line)
+        return CommandResponse(command[2:], args, data)
 
     async def raw_request(
-        self, request: str, connection: Optional[CommandConnection] = None
-    ) -> List[str]:
+        self, request: str, connection: CommandConnection | None = None
+    ) -> Sequence[str]:
         """Send a raw command to the Host Command service and return all response lines.
 
         Handles authentication if required, and raises an exception if the response line
@@ -213,6 +169,12 @@ class CommandClient:
                         connection=self._connection,
                     )
 
+                self._logger.info(
+                    "Connected to command client at %s:%d",
+                    self._connection.host,
+                    self._connection.port,
+                )
+
             return self._connection
 
     def _parse_command_error(self, message: str) -> CommandError:
@@ -222,7 +184,9 @@ class CommandClient:
         error_code = int(error_code_str)
 
         exc: CommandError
-        if error_code == 21:
+        if error_code == 7:
+            exc = InvalidObjectError(error_message)
+        elif error_code == 21:
             exc = LoginRequiredError(error_message)
         elif error_code == 23:
             exc = LoginFailedError(error_message)

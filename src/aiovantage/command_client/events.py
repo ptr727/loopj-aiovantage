@@ -3,25 +3,13 @@
 import asyncio
 import logging
 from collections import defaultdict
+from collections.abc import Callable, Coroutine, Iterable, Sequence
 from contextlib import suppress
 from enum import Enum
 from inspect import iscoroutinefunction
 from ssl import SSLContext
 from types import TracebackType
-from typing import (
-    Callable,
-    Coroutine,
-    Dict,
-    Iterable,
-    List,
-    Literal,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TypedDict,
-    Union,
-)
+from typing import Literal, TypedDict
 
 from typing_extensions import Self
 
@@ -80,14 +68,12 @@ class EnhancedLogEvent(TypedDict):
 
 
 # Type alias for any event type
-Event = Union[
-    ConnectEvent, DisconnectEvent, ReconnectEvent, StatusEvent, EnhancedLogEvent
-]
+Event = ConnectEvent | DisconnectEvent | ReconnectEvent | StatusEvent | EnhancedLogEvent
 
 # Type aliases for callbacks for event subscriptions
-EventCallback = Callable[[Event], Union[None, Coroutine]]
+EventCallback = Callable[[Event], Coroutine | None]
 EventFilter = Callable[[Event], bool]
-EventSubscription = Tuple[EventCallback, Optional[EventFilter]]
+EventSubscription = tuple[EventCallback, EventFilter | None]
 
 
 class EventStream:
@@ -96,21 +82,21 @@ class EventStream:
     def __init__(
         self,
         host: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
         *,
-        ssl: Union[SSLContext, bool] = True,
-        port: Optional[int] = None,
+        ssl: SSLContext | bool = True,
+        port: int | None = None,
         conn_timeout: float = 30,
     ) -> None:
         """Initialize the client."""
         self._connection = CommandConnection(host, port, ssl, conn_timeout)
         self._username = username
         self._password = password
-        self._tasks: List[asyncio.Task[None]] = []
-        self._subscriptions: List[EventSubscription] = []
-        self._status_subscribers: Dict[str, int] = defaultdict(int)
-        self._enhanced_log_subscribers: Dict[str, int] = defaultdict(int)
+        self._tasks: list[asyncio.Task[None]] = []
+        self._subscriptions: list[EventSubscription] = []
+        self._status_subscribers: dict[str, int] = defaultdict(int)
+        self._enhanced_log_subscribers: dict[str, int] = defaultdict(int)
         self._start_lock = asyncio.Lock()
         self._started = False
         self._connection_lock = asyncio.Lock()
@@ -124,9 +110,9 @@ class EventStream:
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         """Exit context manager."""
         self.stop()
@@ -168,12 +154,18 @@ class EventStream:
                 if self._username and self._password:
                     await self._send(f"LOGIN {self._username} {self._password}")
 
+                self._logger.info(
+                    "Connected to event stream at %s:%d",
+                    self._connection.host,
+                    self._connection.port,
+                )
+
             return self._connection
 
     def subscribe(
         self,
         callback: EventCallback,
-        event_filter: Union[EventType, Iterable[EventType], EventFilter, None] = None,
+        event_filter: EventType | Iterable[EventType] | EventFilter | None = None,
     ) -> Callable[[], None]:
         """Subscribe to events from the Host Command service.
 
@@ -202,7 +194,7 @@ class EventStream:
         return unsubscribe
 
     def subscribe_status(
-        self, callback: EventCallback, status_types: Union[str, Iterable[str]]
+        self, callback: EventCallback, status_types: str | Iterable[str]
     ) -> Callable[[], None]:
         """Subscribe to "Status" events from the Host Command service.
 
@@ -228,7 +220,7 @@ class EventStream:
             callback,
             lambda event: (
                 event["type"] == EventType.STATUS
-                and event["status_type"] in status_type
+                and event["status_type"] in status_types
             ),
         )
 
@@ -242,7 +234,7 @@ class EventStream:
         return unsubscribe
 
     def subscribe_enhanced_log(
-        self, callback: EventCallback, log_types: Union[str, Iterable[str]]
+        self, callback: EventCallback, log_types: str | Iterable[str]
     ) -> Callable[[], None]:
         """Subscribe to "Enhanced Log" events from the Host Command service.
 
@@ -297,7 +289,6 @@ class EventStream:
                 conn = await self.get_connection()
 
                 # Notify that we're connected
-                self._logger.debug("Connected to EventStream")
                 if connect_attempts == 1:
                     self.emit({"type": EventType.CONNECTED})
                 else:
@@ -349,7 +340,7 @@ class EventStream:
                 await self._send(command)
                 self._command_queue.task_done()
             except ClientError as err:
-                self._logger.debug("Error while sending command: %s", str(err))
+                self._logger.warning("Error while sending command: %s", str(err))
 
     async def _keepalive(self) -> None:
         # Send a periodic "ECHO" keepalive command.
@@ -382,7 +373,7 @@ class EventStream:
                 }
             )
         elif message.startswith("EL:"):
-            # Parse an "enhanced log" message, of the form "EL:<log>"
+            # Parse an "enhanced log" message, of the form "EL: <log>"
             # These messages are emitted when an enhanced log is received after
             # subscribing to updates via "ELLOG <type>".
             self.emit({"type": EventType.ENHANCED_LOG, "log": message[4:]})

@@ -4,13 +4,13 @@ import argparse
 import asyncio
 import contextlib
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from aiovantage import Vantage, VantageEvent
 from aiovantage.models import SystemObject
 
 
-def callback(event: VantageEvent, obj: SystemObject, data: Dict[str, Any]) -> None:
+def callback(event: VantageEvent, obj: SystemObject, data: dict[str, Any]) -> None:
     """Print out any state changes."""
     object_type = type(obj).__name__
 

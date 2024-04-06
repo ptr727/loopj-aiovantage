@@ -1,7 +1,8 @@
 """Helper functions for fetching system objects."""
 
+from collections.abc import AsyncIterator, Sequence
 from contextlib import suppress
-from typing import Any, AsyncIterator, Optional, Sequence
+from typing import Any
 
 from aiovantage.errors import ClientError, ClientResponseError
 
@@ -12,18 +13,19 @@ from .interfaces.configuration import (
     GetObject,
     OpenFilter,
 )
+from .interfaces.introspection import GetVersion
 
 
 async def get_objects(
     client: ConfigClient,
     *,
-    types: Optional[Sequence[str]] = None,
-    xpath: Optional[str] = None,
+    types: Sequence[str] | None = None,
+    xpath: str | None = None,
 ) -> AsyncIterator[Any]:
     """Get all vantage system objects of the specified types.
 
     Args:
-        client: The ACI client instance
+        client: The config client instance
         types: An optional string, or list of strings of object types to fetch
         xpath: An optional xpath to filter the results by, eg. "/Load", "/*[@VID='12']"
 
@@ -71,7 +73,7 @@ async def get_objects_by_id(
     """Get all vantage system objects of the specified ids.
 
     Args:
-        client: The ACI client instance
+        client: The config client instance
         vids: A list of Vantage IDs for object to fetch
 
     Yields:
@@ -93,7 +95,7 @@ async def get_object_by_id(client: ConfigClient, vid: int) -> Any:
     """Get a single Vantage system object by id.
 
     Args:
-        client: The ACI client instance
+        client: The config client instance
         vid: The Vantage ID of the object to fetch
 
     Returns:
@@ -103,3 +105,16 @@ async def get_object_by_id(client: ConfigClient, vid: int) -> Any:
         return await get_objects_by_id(client, [vid]).__anext__()
     except StopAsyncIteration:
         return None
+
+
+async def get_version(client: ConfigClient) -> str | None:
+    """Get the firmware version of the Vantage controller.
+
+    Args:
+        client: The config client instance.
+    """
+    version = await client.request(GetVersion)
+    if version is None:
+        return None
+
+    return version.app
