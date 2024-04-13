@@ -9,5 +9,5 @@ __pycache__/
 *~
 .idea
 *.log
-.vscode
 .venv
+scripts/schemas
