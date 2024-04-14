@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("host", help="hostname of Vantage controller")
 parser.add_argument("--username", help="username for Vantage controller")
 parser.add_argument("--password", help="password for Vantage controller")
+parser.add_argument("--debug", help="enable debug logging", action="store_true")
 args = parser.parse_args()
 
 ElementTree.register_namespace("vntg", "http://www.vantagecontrols.com/Vantage")
