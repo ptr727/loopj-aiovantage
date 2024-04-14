@@ -8,5 +8,6 @@ __pycache__/
 *.so
 *~
 .idea
-.vscode
 *.log
+.venv
+scripts/schemas
