@@ -73,4 +73,4 @@ async def main() -> None:
         await sounder.turn_off(args.id)
 
 
-asyncio.run(main())
+asyncio.run(main(), debug=args.debug)
