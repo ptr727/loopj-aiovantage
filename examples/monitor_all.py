@@ -43,8 +43,9 @@ async def main() -> None:
         # Fetch all known objects from the controller
         await vantage.initialize()
 
-        # Keep running for a while
-        await asyncio.sleep(3600)
+        # Keep running forever
+        while True:
+            await asyncio.sleep(3600)
 
 
 with contextlib.suppress(KeyboardInterrupt):
