@@ -20,7 +20,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "xsdata==24.1",
+    "xsdata==24.9",
     "typing_extensions>=4.6.3,<5.0",
 ]
 
@@ -31,10 +31,10 @@ Source = "https://github.com/loopj/aiovantage"
 
 [project.optional-dependencies]
 dev = [
-    "black==24.1.1",
-    "mypy==1.8.0",
-    "ruff==0.1.14",
-    "pre-commit==3.6.0",
+    "black==24.8.0",
+    "mypy==1.11.2",
+    "ruff==0.6.7",
+    "pre-commit==3.8.0",
 ]
 
 [tool.hatch.version]
