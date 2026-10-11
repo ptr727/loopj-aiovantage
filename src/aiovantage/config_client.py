@@ -17,12 +17,26 @@ The service is discoverable via mDNS as `_aci._tcp.local` and/or
 
 from ._config_client.client import ConfigClient
 from ._config_client.interfaces.configuration import ConfigurationInterface
+from ._config_client.interfaces.diagnostic import (
+    DiagnosticInterface,
+    EventLogEntry,
+    ModuleInfo,
+    SysLogEntry,
+    SysLogType,
+    TriggerType,
+)
 from ._config_client.interfaces.introspection import IntrospectionInterface
 from ._config_client.interfaces.login import LoginInterface
 
 __all__ = [
     "ConfigClient",
     "ConfigurationInterface",
+    "DiagnosticInterface",
+    "EventLogEntry",
     "IntrospectionInterface",
     "LoginInterface",
+    "ModuleInfo",
+    "SysLogEntry",
+    "SysLogType",
+    "TriggerType",
 ]

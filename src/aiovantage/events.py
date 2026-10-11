@@ -13,6 +13,8 @@ __all__ = [
     "Reconnected",
     "StatusReceived",
     "EnhancedLogReceived",
+    "TriggerReceived",
+    "SystemLogReceived",
     "ObjectAdded",
     "ObjectUpdated",
     "ObjectDeleted",
@@ -91,6 +93,72 @@ class EnhancedLogReceived:
 
     log: str
     """The enhanced log message."""
+
+
+@dataclass
+class TriggerReceived:
+    """Event emitted when an object triggers a task, from the "EVENT" enhanced log."""
+
+    source: int
+    """The VID of the object that fired, eg. a button, timer or sensor."""
+
+    destination: int
+    """The VID of the task that was started."""
+
+    event: int
+    """The type of the trigger, see `aiovantage.config_client.TriggerType`."""
+
+    param1: int
+    """The first trigger parameter."""
+
+    param2: int
+    """The second trigger parameter."""
+
+    @classmethod
+    def parse(cls, log: str) -> "TriggerReceived | None":
+        """Parse an "EVENT" enhanced log of the form "<src> <dst> <event> <p1> <p2>".
+
+        Returns:
+            The trigger, or None if the log is not a trigger log.
+        """
+        tokens = log.split()
+        if len(tokens) != 5:
+            return None
+
+        try:
+            return cls(*(int(token) for token in tokens))
+        except ValueError:
+            return None
+
+
+@dataclass
+class SystemLogReceived:
+    """Event emitted when a system log is received, from the "SYSTEM" enhanced log."""
+
+    type: int
+    """The type of the log, see `aiovantage.config_client.SysLogType`."""
+
+    source: str
+    """The source of the log, eg. "Controller"."""
+
+    message: str
+    """The log message."""
+
+    @classmethod
+    def parse(cls, log: str) -> "SystemLogReceived | None":
+        """Parse a "SYSTEM" enhanced log of the form "<type> <source> <message>".
+
+        Returns:
+            The system log, or None if the log is not a system log.
+        """
+        log_type, _, rest = log.partition(" ")
+        source, _, message = rest.partition(" ")
+
+        # Object status logs carry an "Interface.Method", and triggers are numeric
+        if not log_type.isdigit() or not source or "." in source or source.isdigit():
+            return None
+
+        return cls(int(log_type), source, message.strip())
 
 
 @dataclass
