@@ -84,7 +84,7 @@ class SysLogEntry:
     """A system log entry."""
 
     type: int | None = field(default=None, metadata={"name": "Type"})
-    # Month, day and time only, eg. "10-06T06:51:15"
+    # Month, day and time only, eg. "01-02T03:04:05"
     time: str | None = field(default=None, metadata={"name": "Time"})
     src: str | None = field(default=None, metadata={"name": "Src"})
     msg: str | None = field(default=None, metadata={"name": "Msg"})
@@ -199,8 +199,10 @@ class DiagnosticInterface:
     ) -> EventLogEntry | None:
         """Get a single trigger history entry by position.
 
-        Positions count from 0 at the oldest entry, so polling from the length of
-        the history returns new entries as they are recorded.
+        Positions count from 0 at the oldest entry held, so polling from the length
+        of the history returns new entries as they are recorded. How many entries
+        the controller keeps, and what it drops once full, is not known, so check
+        the timestamps of polled entries rather than relying on positions alone.
 
         Args:
             client: A config client instance

@@ -30,7 +30,9 @@ async def main() -> None:
         for entry in await DiagnosticInterface.get_event_log(client):
             print(
                 entry.time_stamp,
-                entry.trigger_type.name if entry.trigger_type else entry.event,
+                entry.trigger_type.name
+                if entry.trigger_type is not None
+                else entry.event,
                 f"{entry.source} -> {entry.destination}",
                 entry.param1,
                 entry.param2,
@@ -40,7 +42,7 @@ async def main() -> None:
         # The system log, as shown in the Diagnostics "Log"
         print("# System log")
         for entry in await DiagnosticInterface.get_sys_log(client):
-            log_type = entry.log_type.name if entry.log_type else entry.type
+            log_type = entry.log_type.name if entry.log_type is not None else entry.type
             print(entry.time, log_type, entry.src, entry.msg)
         print()
 

@@ -5,6 +5,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
+from aiovantage._config_client.interfaces.diagnostic import SysLogType, TriggerType
+
 T = TypeVar("T")
 
 __all__ = [
@@ -130,6 +132,14 @@ class TriggerReceived:
         except ValueError:
             return None
 
+    @property
+    def trigger_type(self) -> "TriggerType | None":
+        """The type of the trigger, if known."""
+        try:
+            return TriggerType(self.event)
+        except ValueError:
+            return None
+
 
 @dataclass
 class SystemLogReceived:
@@ -151,14 +161,22 @@ class SystemLogReceived:
         Returns:
             The system log, or None if the log is not a system log.
         """
-        log_type, _, rest = log.partition(" ")
-        source, _, message = rest.partition(" ")
+        log_type, source, message = (log.split(maxsplit=2) + ["", "", ""])[:3]
 
-        # Object status logs carry an "Interface.Method", and triggers are numeric
-        if not log_type.isdigit() or not source or "." in source or source.isdigit():
+        # Enhanced logs carry no type tag, so tell them apart by shape: object
+        # status logs carry an "Interface.Method", and trigger logs are all numeric
+        if not log_type.isdigit() or not source or "." in source or _is_int(source):
             return None
 
         return cls(int(log_type), source, message.strip())
+
+    @property
+    def log_type(self) -> "SysLogType | None":
+        """The type of the log, if known."""
+        try:
+            return SysLogType(self.type)
+        except ValueError:
+            return None
 
 
 @dataclass
@@ -186,3 +204,11 @@ class ObjectDeleted(Generic[T]):
 
     obj: T
     """The object that the event is related to."""
+
+
+def _is_int(token: str) -> bool:
+    try:
+        int(token)
+    except ValueError:
+        return False
+    return True

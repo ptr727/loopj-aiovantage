@@ -6,7 +6,6 @@ import contextlib
 import logging
 
 from aiovantage.command_client import EventStream
-from aiovantage.config_client import TriggerType
 from aiovantage.events import Connected, SystemLogReceived, TriggerReceived
 
 # Grab connection info from command line arguments
@@ -26,10 +25,8 @@ def on_connected(event: Connected) -> None:
 
 def on_trigger(event: TriggerReceived) -> None:
     """Print out the object that triggered each task."""
-    try:
-        trigger = TriggerType(event.event).name
-    except ValueError:
-        trigger = str(event.event)
+    trigger_type = event.trigger_type
+    trigger = trigger_type.name if trigger_type is not None else str(event.event)
 
     print(f"{trigger}: {event.source} started task {event.destination}")
 

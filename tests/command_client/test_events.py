@@ -4,6 +4,7 @@ import asyncio
 
 from aiovantage._command_client.events import KEEPALIVE_INTERVAL, READ_TIMEOUT
 from aiovantage.command_client import EventStream
+from aiovantage.config_client import SysLogType, TriggerType
 from aiovantage.errors import ClientTimeoutError
 from aiovantage.events import (
     Connected,
@@ -192,3 +193,28 @@ async def test_trigger_parse_keeps_codes_outside_the_known_types() -> None:
     assert TriggerReceived.parse("120 300 40964 1 0") == TriggerReceived(
         120, 300, 0xA004, 1, 0
     )
+
+
+async def test_log_shapes_parse_as_exactly_one_kind() -> None:
+    # Enhanced logs carry no type tag, so each shape must match only one parser
+    assert SystemLogReceived.parse("100 -1 7 0 0") is None
+    assert TriggerReceived.parse("100 -1 7 0 0") == TriggerReceived(100, -1, 7, 0, 0)
+    assert TriggerReceived.parse("2 Controller Module Online: 1.9 [120]") is None
+    assert SystemLogReceived.parse("324 Button.GetState 1") is None
+    assert TriggerReceived.parse("324 Button.GetState 1") is None
+
+
+async def test_system_log_parse_tolerates_extra_whitespace() -> None:
+    parsed = SystemLogReceived.parse("3  Controller	[ALERT] lost a feed ")
+
+    assert parsed == SystemLogReceived(3, "Controller", "[ALERT] lost a feed")
+    assert parsed is not None
+    assert parsed.log_type is SysLogType.WARNING
+
+
+async def test_trigger_type_property_names_known_codes_only() -> None:
+    assert TriggerReceived(100, 200, 0, 1, 0).trigger_type is TriggerType.BUTTON_UP
+    assert TriggerReceived(120, 300, 0xA004, 1, 0).trigger_type is (
+        TriggerType.MODULE_ALERT
+    )
+    assert TriggerReceived(100, 200, 99, 0, 0).trigger_type is None
