@@ -5,7 +5,11 @@ import asyncio
 import pytest
 
 from aiovantage.config_client import ConfigClient, ConfigurationInterface
-from aiovantage.errors import ClientResponseError, ClientTimeoutError
+from aiovantage.errors import (
+    ClientResponseError,
+    ClientTimeoutError,
+    LoginRequiredError,
+)
 from tests.fakes import FakeConfigConnection
 
 OPEN_FILTER_REPLY = """<IConfiguration>
@@ -111,3 +115,14 @@ async def test_rpc_raises_response_error_on_malformed_reply() -> None:
 
     with pytest.raises(ClientResponseError):
         await ConfigurationInterface.open_filter(client, "Load")
+
+
+async def test_rpc_closes_connection_when_login_is_required() -> None:
+    client, conn = make_client(OPEN_FILTER_REPLY)
+    conn.requires_authentication = True  # type: ignore[misc]
+
+    # LoginRequiredError is a CommandError, and so a ClientError, so setup closes the
+    # connection rather than leaving it open for the next request to use unauthenticated
+    with pytest.raises(LoginRequiredError):
+        await ConfigurationInterface.open_filter(client, "Load")
+    assert conn.closed

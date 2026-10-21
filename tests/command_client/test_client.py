@@ -10,6 +10,7 @@ from aiovantage.errors import (
     ClientTimeoutError,
     CommandError,
     FailedError,
+    LoginFailedError,
     NotInitializedError,
 )
 from tests.fakes import FakeCommandConnection, UnreadableLoginConnection
@@ -137,3 +138,20 @@ async def test_raw_request_queued_behind_a_timeout_uses_a_fresh_connection() -> 
     assert isinstance(first, ClientTimeoutError)
     assert second == ["R:VERSION 4.9.0.2"]
     assert conn.opens == 2
+
+
+async def test_raw_request_closes_connection_when_login_is_rejected() -> None:
+    client = CommandClient("fake", "user", "wrong")
+    conn = FakeCommandConnection([])
+    client._connection = conn  # type: ignore[assignment]
+
+    async def reject(username: str, password: str) -> None:
+        raise LoginFailedError("Invalid username or password")
+
+    conn.authenticate = reject  # type: ignore[method-assign]
+
+    # LoginFailedError is a CommandError, and so a ClientError, so setup closes the
+    # connection rather than leaving it open for the next request to use unauthenticated
+    with pytest.raises(LoginFailedError):
+        await client.raw_request("VERSION")
+    assert conn.closed
