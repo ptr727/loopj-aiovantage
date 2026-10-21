@@ -79,17 +79,24 @@ class FakeConfigConnection:
     port = 2001
     requires_authentication = False
 
-    def __init__(self, replies: list[str | BaseException]) -> None:
-        """Initialize the fake with scripted replies."""
+    def __init__(
+        self,
+        replies: list[str | BaseException],
+        open_errors: list[BaseException] | None = None,
+    ) -> None:
+        """Initialize the fake with scripted replies, and errors to raise on open."""
         self.replies = list(replies)
+        self.open_errors = list(open_errors or [])
         self.written: list[str] = []
         self.opens = 0
         self.closed = True
 
     async def open(self) -> None:
-        """Mark the connection open."""
+        """Mark the connection open, then raise the next scripted open error."""
         self.opens += 1
         self.closed = False
+        if self.open_errors:
+            raise self.open_errors.pop(0)
 
     def close(self) -> None:
         """Mark the connection closed."""

@@ -74,3 +74,18 @@ async def test_rpc_closes_connection_on_cancel_and_reopens() -> None:
     # The next request opens a fresh connection instead of reading the stale reply
     assert await ConfigurationInterface.open_filter(client, "Load") == 7386048
     assert conn.opens == 2
+
+
+async def test_rpc_closes_connection_when_setup_fails_and_reopens() -> None:
+    client = ConfigClient("fake")
+    conn = FakeConfigConnection([OPEN_FILTER_REPLY], open_errors=[ClientTimeoutError()])
+    client._connection = conn  # type: ignore[assignment]
+
+    # The setup probe timed out, so its late reply is dropped with the connection
+    with pytest.raises(ClientTimeoutError):
+        await ConfigurationInterface.open_filter(client, "Load")
+    assert conn.closed
+
+    # The next request sets up a fresh connection
+    assert await ConfigurationInterface.open_filter(client, "Load") == 7386048
+    assert conn.opens == 2

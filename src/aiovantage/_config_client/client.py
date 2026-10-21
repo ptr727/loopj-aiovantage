@@ -18,6 +18,7 @@ from xsdata.utils.text import pascal_case, snake_case
 from aiovantage._logger import logger
 from aiovantage.errors import (
     ClientConnectionError,
+    ClientError,
     ClientResponseError,
     LoginRequiredError,
 )
@@ -204,16 +205,24 @@ class ConfigClient:
         """Get a connection to the ACI service."""
         async with self._connection_lock:
             if self._connection.closed:
-                # Open a new connection
-                await self._connection.open()
+                try:
+                    # Open a new connection
+                    await self._connection.open()
 
-                # Authenticate the new connection if we have credentials
-                if self._username and self._password:
-                    await self._connection.authenticate(self._username, self._password)
-                elif self._connection.requires_authentication:
-                    raise LoginRequiredError(
-                        "Login required, but no credentials were provided"
-                    )
+                    # Authenticate the new connection if we have credentials
+                    if self._username and self._password:
+                        await self._connection.authenticate(
+                            self._username, self._password
+                        )
+                    elif self._connection.requires_authentication:
+                        raise LoginRequiredError(
+                            "Login required, but no credentials were provided"
+                        )
+                except (ClientError, asyncio.CancelledError):
+                    # Close a connection that failed part way through setup, so the
+                    # next request starts over rather than reusing it
+                    self._connection.close()
+                    raise
 
                 logger.info(
                     "Connected to config client at %s:%d",
