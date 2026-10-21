@@ -2,6 +2,8 @@
 
 import asyncio
 
+import pytest
+
 from aiovantage._command_client.events import KEEPALIVE_INTERVAL, READ_TIMEOUT
 from aiovantage.command_client import EventStream
 from aiovantage.errors import ClientResponseError, ClientTimeoutError
@@ -128,6 +130,17 @@ async def test_message_handler_reconnects_when_login_reply_is_unreadable() -> No
     assert conn.closed
     assert [type(event) for event in events] == [Disconnected]
     task.cancel()
+
+
+async def test_start_closes_connection_when_login_reply_is_unreadable() -> None:
+    stream = EventStream("fake", "user", "pass")
+    conn = UnreadableLoginConnection([])
+    stream._connection = conn  # type: ignore[assignment]
+
+    # The connection is dropped rather than left open with an unknown login result
+    with pytest.raises(ClientResponseError):
+        await stream.start()
+    assert conn.closed
 
 
 async def test_subscribe_enhanced_log_queues_commands_for_the_master_at_host() -> None:

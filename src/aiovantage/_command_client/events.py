@@ -134,12 +134,20 @@ class EventStream(EventDispatcher):
         """Get a connection to the Host Command service."""
         async with self._connection_lock:
             if self._connection.closed:
-                # Open a new connection
-                await self._connection.open()
+                try:
+                    # Open a new connection
+                    await self._connection.open()
 
-                # Authenticate the new connection if we have credentials
-                if self._username and self._password:
-                    await self._connection.authenticate(self._username, self._password)
+                    # Authenticate the new connection if we have credentials
+                    if self._username and self._password:
+                        await self._connection.authenticate(
+                            self._username, self._password
+                        )
+                except (ClientError, asyncio.CancelledError):
+                    # Close a connection that failed part way through setup, so the
+                    # next attempt starts over rather than using it unauthenticated
+                    self._connection.close()
+                    raise
 
                 logger.info(
                     "Connected to event stream at %s:%d",
@@ -247,7 +255,7 @@ class EventStream(EventDispatcher):
             except (ClientConnectionError, ClientResponseError):
                 # Close the socket so the retry opens a fresh one rather than reusing it.
                 # An unreadable line is skipped above, so a response error here came
-                # from setting up the connection.
+                # from setting up the connection, which has already closed it.
                 self._connection.close()
 
             # If we get here, the connection was lost
