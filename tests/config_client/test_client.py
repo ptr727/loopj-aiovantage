@@ -5,7 +5,7 @@ import asyncio
 import pytest
 
 from aiovantage.config_client import ConfigClient, ConfigurationInterface
-from aiovantage.errors import ClientTimeoutError
+from aiovantage.errors import ClientResponseError, ClientTimeoutError
 from tests.fakes import FakeConfigConnection
 
 OPEN_FILTER_REPLY = """<IConfiguration>
@@ -104,3 +104,10 @@ async def test_rpc_queued_behind_a_timeout_uses_a_fresh_connection() -> None:
     assert isinstance(first, ClientTimeoutError)
     assert second == 7386048
     assert conn.opens == 2
+
+
+async def test_rpc_raises_response_error_on_malformed_reply() -> None:
+    client, _ = make_client("<IConfiguration><OpenFilter></IConfiguration>\n")
+
+    with pytest.raises(ClientResponseError):
+        await ConfigurationInterface.open_filter(client, "Load")

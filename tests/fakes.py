@@ -2,7 +2,7 @@
 
 import asyncio
 
-from aiovantage.errors import ClientConnectionError
+from aiovantage.errors import ClientConnectionError, ClientResponseError
 
 
 class FakeCommandClient:
@@ -69,6 +69,18 @@ class FakeCommandConnection:
         if isinstance(line, BaseException):
             raise line
         return line + "\r\n"
+
+
+class UnreadableLoginConnection(FakeCommandConnection):
+    """A connection whose first login reply cannot be read."""
+
+    logins = 0
+
+    async def authenticate(self, username: str, password: str) -> None:
+        """Fail the first login with an unreadable reply."""
+        self.logins += 1
+        if self.logins == 1:
+            raise ClientResponseError
 
 
 class FakeConfigConnection:
