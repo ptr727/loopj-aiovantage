@@ -58,7 +58,12 @@ async def test_enhanced_log_handler_skips_logs_that_are_not_object_status() -> N
 
     # Trigger and system logs share the stream with object status logs, even
     # when they lead with the VID of an object the controller manages
-    for log in ("100 200 7 0 0", "100 Controller Module Offline", "100"):
+    for log in (
+        "100 200 7 0 0",
+        "100 Controller Module Offline",
+        "100",
+        "\u00b2 X.Y 1",
+    ):
         handler(EnhancedLogReceived(log))
     assert updated == []
 

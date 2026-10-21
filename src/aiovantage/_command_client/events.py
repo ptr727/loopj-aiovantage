@@ -223,7 +223,8 @@ class EventStream(EventDispatcher):
         """Subscribe to objects triggering tasks, eg. a button press starting a task.
 
         These are the live counterpart of the controller's trigger history, and name
-        the object that started each task.
+        the object that started each task. Subscribing turns on the controller's
+        "EVENT" enhanced log, which stays written after the client disconnects.
 
         Args:
             callback: The callback to invoke when a trigger is received.
@@ -247,6 +248,9 @@ class EventStream(EventDispatcher):
         peers: Iterable[int] = (),
     ) -> Callable[[], None]:
         """Subscribe to the system log, eg. modules going offline or losing a line feed.
+
+        Subscribing turns on the controller's "SYSTEM" enhanced log, which stays
+        written after the client disconnects.
 
         Args:
             callback: The callback to invoke when a system log is received.

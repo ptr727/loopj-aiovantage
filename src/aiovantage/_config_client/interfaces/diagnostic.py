@@ -1,39 +1,17 @@
 import datetime as dt
 from dataclasses import dataclass, field
-from enum import IntEnum
+
+from aiovantage._log_types import SysLogType, TriggerType
 
 from ..client import ConfigClient
-
-
-class TriggerType(IntEnum):
-    """Type of the event that triggered a task, as recorded in the trigger history."""
-
-    BUTTON_UP = 0
-    BUTTON_DOWN = 1
-    BUTTON_HOLD = 2
-    TIMER = 3
-    DATA = 4
-    POSITION = 5
-    IN_RANGE = 6
-    OUT_OF_RANGE = 7
-    TEMPERATURE = 8
-    DAY_MODE = 9
-    FAN_MODE = 10
-    OPERATION_MODE = 11
-    CONNECT = 12
-    DISCONNECT = 13
-    BOOT = 14
-    LEARN = 15
-    TAP = 16
-
-    # A module's alert, eg. when it loses a line feed, with the feed number in param1
-    MODULE_ALERT = 0xA004
 
 
 @dataclass
 class EventLogEntry:
     """A trigger history entry: a source object starting a task."""
 
+    # Kept as text, since it is the controller's local time with no offset, which the
+    # datetime converter would mark as UTC
     time_stamp: str | None = field(default=None, metadata={"name": "TimeStamp"})
     source: int | None = field(default=None, metadata={"name": "Source"})
     destination: int | None = field(default=None, metadata={"name": "Destination"})
@@ -41,7 +19,7 @@ class EventLogEntry:
     param1: int | None = field(default=None, metadata={"name": "Param1"})
     param2: int | None = field(default=None, metadata={"name": "Param2"})
 
-    # Only set by GetEventLogNext, -1 marks the last entry
+    # Only set by GetEventLogNext: the position after this entry, or -1 on the last
     position: int | None = field(default=None, metadata={"name": "Position"})
 
     @property
@@ -50,33 +28,21 @@ class EventLogEntry:
         if self.time_stamp is None:
             return None
 
-        return dt.datetime.fromisoformat(self.time_stamp)
+        try:
+            return dt.datetime.fromisoformat(self.time_stamp)
+        except ValueError:
+            return None
 
     @property
     def trigger_type(self) -> TriggerType | None:
         """The type of the trigger, if known."""
-        try:
-            return TriggerType(self.event)  # type: ignore[arg-type]
-        except ValueError:
+        if self.event is None:
             return None
 
-
-class SysLogType(IntEnum):
-    """Type of a system log entry.
-
-    In the order of the levels accepted by the Host Command "LOG" command.
-    """
-
-    DEBUG = 0
-    DUMP = 1
-    INFORMATION = 2
-    WARNING = 3
-    ERROR = 4
-    FATAL = 5
-    TASK = 6
-    DEVICE = 7
-    QUERY = 8
-    PROF = 9
+        try:
+            return TriggerType(self.event)
+        except ValueError:
+            return None
 
 
 @dataclass
@@ -92,8 +58,11 @@ class SysLogEntry:
     @property
     def log_type(self) -> SysLogType | None:
         """The type of the entry, if known."""
+        if self.type is None:
+            return None
+
         try:
-            return SysLogType(self.type)  # type: ignore[arg-type]
+            return SysLogType(self.type)
         except ValueError:
             return None
 
@@ -104,6 +73,8 @@ class ModuleInfo:
 
     @dataclass
     class Status:
+        """Status bytes reported by the module's processors."""
+
         proc0: str | None = field(default=None, metadata={"name": "Proc0"})
         proc1: str | None = field(default=None, metadata={"name": "Proc1"})
 

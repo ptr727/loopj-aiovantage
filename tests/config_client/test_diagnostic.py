@@ -105,3 +105,25 @@ async def test_get_modules_parses_status_and_errors() -> None:
     ]
     assert modules[0].status is not None
     assert modules[0].status.proc0 == "00"
+
+
+async def test_get_sys_log_addresses_another_master() -> None:
+    client, conn = make_client(
+        "<?Master 2?>\n<IDiagnostic><GetSysLog><return/></GetSysLog></IDiagnostic>\n"
+    )
+
+    assert await DiagnosticInterface.get_sys_log(client, master=2) == []
+    assert conn.written[0].startswith("<?Master 2?><IDiagnostic>")
+
+
+async def test_event_log_entry_with_unreadable_fields() -> None:
+    client, _ = make_client(
+        "<IDiagnostic>\n\t<GetEventLog>\n\t\t<return>"
+        + entry_xml("not a time", 100, 200, 99)
+        + "</return>\n\t</GetEventLog>\n</IDiagnostic>\n"
+    )
+
+    [entry] = await DiagnosticInterface.get_event_log(client)
+
+    assert entry.timestamp is None
+    assert entry.trigger_type is None
