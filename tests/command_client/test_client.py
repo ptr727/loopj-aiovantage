@@ -122,3 +122,18 @@ async def test_raw_request_closes_connection_when_login_fails_and_reopens() -> N
     # The next request opens a fresh connection and logs in again
     assert await client.raw_request("VERSION") == ["R:VERSION 4.9.0.2"]
     assert (conn.opens, conn.logins) == (2, 2)
+
+
+async def test_raw_request_queued_behind_a_timeout_uses_a_fresh_connection() -> None:
+    client, conn = make_client(ClientTimeoutError(), "R:VERSION 4.9.0.2")
+
+    # The second request waits for the first, which times out and closes the socket
+    first, second = await asyncio.gather(
+        client.raw_request("VERSION"),
+        client.raw_request("VERSION"),
+        return_exceptions=True,
+    )
+
+    assert isinstance(first, ClientTimeoutError)
+    assert second == ["R:VERSION 4.9.0.2"]
+    assert conn.opens == 2

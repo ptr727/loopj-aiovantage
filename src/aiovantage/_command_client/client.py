@@ -141,10 +141,12 @@ class CommandClient:
         Returns:
             The response lines received from the server.
         """
-        conn = await self._get_connection()
-
-        # Send the command
         async with self._command_lock:
+            # Open the connection if it's closed, once any earlier command is done
+            # with it, since a failed command closes it
+            conn = await self._get_connection()
+
+            # Send the command
             try:
                 logger.debug("Sending command: %s", request)
                 await conn.write(f"{request}\n")

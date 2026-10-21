@@ -59,11 +59,14 @@ class FakeCommandConnection:
         """Accept any credentials."""
 
     async def write(self, message: str) -> None:
-        """Record an outbound message."""
+        """Record an outbound message, failing like the real connection once closed."""
+        if self.closed:
+            raise ClientConnectionError("Client not connected.")
         self.written.append(message)
 
     async def readuntil(self, separator: bytes, timeout: float | None = None) -> str:
-        """Return the next scripted line, terminated the way the controller sends it."""
+        """Return the next scripted line, letting other tasks run first like a real read."""
+        await asyncio.sleep(0)
         self.timeouts.append(timeout)
         line = self.lines.pop(0)
         if isinstance(line, BaseException):
