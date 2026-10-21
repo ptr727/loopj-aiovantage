@@ -12,7 +12,7 @@ from aiovantage.errors import (
     FailedError,
     NotInitializedError,
 )
-from tests.fakes import FakeCommandConnection
+from tests.fakes import FakeCommandConnection, UnreadableLoginConnection
 
 
 def make_client(
@@ -107,3 +107,18 @@ async def test_raw_request_closes_connection_on_unreadable_reply_and_reopens() -
     # The next request opens a fresh connection instead of reading the leftover reply
     assert await client.raw_request("VERSION") == ["R:VERSION 4.9.0.2"]
     assert conn.opens == 2
+
+
+async def test_raw_request_closes_connection_when_login_fails_and_reopens() -> None:
+    client = CommandClient("fake", "user", "pass")
+    conn = UnreadableLoginConnection(["R:VERSION 4.9.0.2"])
+    client._connection = conn  # type: ignore[assignment]
+
+    # The connection is dropped rather than used unauthenticated
+    with pytest.raises(ClientResponseError):
+        await client.raw_request("VERSION")
+    assert conn.closed
+
+    # The next request opens a fresh connection and logs in again
+    assert await client.raw_request("VERSION") == ["R:VERSION 4.9.0.2"]
+    assert (conn.opens, conn.logins) == (2, 2)

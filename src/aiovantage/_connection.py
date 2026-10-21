@@ -142,6 +142,7 @@ class BaseConnection:
         except asyncio.LimitOverrunError as err:
             # The rest of the oversized reply is still on the socket, so the
             # connection can't be read from again
+            self.close()
             raise ClientConnectionError("Reply exceeds the read buffer limit") from err
 
         try:

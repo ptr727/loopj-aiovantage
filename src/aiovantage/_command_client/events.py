@@ -244,8 +244,10 @@ class EventStream(EventDispatcher):
                     logger.debug("Received message: %s", message)
                     self._parse_message(message)
 
-            except ClientConnectionError:
-                # Close the socket so the retry opens a fresh one rather than reusing it
+            except (ClientConnectionError, ClientResponseError):
+                # Close the socket so the retry opens a fresh one rather than reusing it.
+                # An unreadable line is skipped above, so a response error here came
+                # from setting up the connection.
                 self._connection.close()
 
             # If we get here, the connection was lost

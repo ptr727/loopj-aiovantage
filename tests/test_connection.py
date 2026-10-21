@@ -44,3 +44,6 @@ async def test_readuntil_raises_connection_error_when_reply_exceeds_limit() -> N
 
     with pytest.raises(ClientConnectionError):
         await conn.readuntil(b"\r\n")
+
+    # The rest of the reply is still buffered, so the connection is dropped
+    assert conn.closed

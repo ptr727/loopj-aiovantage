@@ -1,5 +1,7 @@
 """Fakes shared across tests."""
 
+from aiovantage.errors import ClientResponseError
+
 
 class FakeCommandClient:
     """Stand-in for CommandClient that answers requests from a script.
@@ -65,6 +67,18 @@ class FakeCommandConnection:
         if isinstance(line, BaseException):
             raise line
         return line + "\r\n"
+
+
+class UnreadableLoginConnection(FakeCommandConnection):
+    """A connection whose first login reply cannot be read."""
+
+    logins = 0
+
+    async def authenticate(self, username: str, password: str) -> None:
+        """Fail the first login with an unreadable reply."""
+        self.logins += 1
+        if self.logins == 1:
+            raise ClientResponseError
 
 
 class FakeConfigConnection:
