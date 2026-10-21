@@ -16,7 +16,11 @@ from xsdata.formats.dataclass.serializers.config import SerializerConfig
 from xsdata.utils.text import pascal_case, snake_case
 
 from aiovantage._logger import logger
-from aiovantage.errors import ClientResponseError, LoginRequiredError
+from aiovantage.errors import (
+    ClientConnectionError,
+    ClientResponseError,
+    LoginRequiredError,
+)
 
 from .connection import ConfigConnection
 
@@ -126,8 +130,14 @@ class ConfigClient:
         # Send the request and read the response
         logger.debug("Sending request: %s", request)
         async with self._request_lock:
-            await conn.write(request)
-            response = await conn.readuntil(separator.encode(), self._read_timeout)
+            try:
+                await conn.write(request)
+                response = await conn.readuntil(separator.encode(), self._read_timeout)
+            except (ClientConnectionError, asyncio.CancelledError):
+                # Close the socket so the next request opens a fresh one rather than
+                # reading this request's late reply
+                self._connection.close()
+                raise
 
         logger.debug("Received response: %s", response)
 

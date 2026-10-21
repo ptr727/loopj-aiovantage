@@ -1,6 +1,11 @@
 """Tests for addressing and parsing RPC calls in ConfigClient."""
 
+import asyncio
+
+import pytest
+
 from aiovantage.config_client import ConfigClient, ConfigurationInterface
+from aiovantage.errors import ClientTimeoutError
 from tests.fakes import FakeConfigConnection
 
 OPEN_FILTER_REPLY = """<IConfiguration>
@@ -11,7 +16,9 @@ OPEN_FILTER_REPLY = """<IConfiguration>
 """
 
 
-def make_client(*replies: str) -> tuple[ConfigClient, FakeConfigConnection]:
+def make_client(
+    *replies: str | BaseException,
+) -> tuple[ConfigClient, FakeConfigConnection]:
     """Build a client whose connection answers with the given replies."""
     client = ConfigClient("fake")
     conn = FakeConfigConnection(list(replies))
@@ -41,3 +48,29 @@ async def test_rpc_parses_reply_from_another_master() -> None:
     client, _ = make_client("<?Master 2?>\n" + OPEN_FILTER_REPLY)
 
     assert await ConfigurationInterface.open_filter(client, "Load", master=2) == 7386048
+
+
+async def test_rpc_closes_connection_on_timeout_and_reopens() -> None:
+    client, conn = make_client(ClientTimeoutError(), OPEN_FILTER_REPLY)
+
+    # A timed out read leaves its late reply on the socket, so it is dropped
+    with pytest.raises(ClientTimeoutError):
+        await ConfigurationInterface.open_filter(client, "Load")
+    assert conn.closed
+
+    # The next request opens a fresh connection instead of reading the late reply
+    assert await ConfigurationInterface.open_filter(client, "Load") == 7386048
+    assert conn.opens == 2
+
+
+async def test_rpc_closes_connection_on_cancel_and_reopens() -> None:
+    client, conn = make_client(asyncio.CancelledError(), OPEN_FILTER_REPLY)
+
+    # A canceled read leaves its reply on the socket, so it is dropped
+    with pytest.raises(asyncio.CancelledError):
+        await ConfigurationInterface.open_filter(client, "Load")
+    assert conn.closed
+
+    # The next request opens a fresh connection instead of reading the stale reply
+    assert await ConfigurationInterface.open_filter(client, "Load") == 7386048
+    assert conn.opens == 2

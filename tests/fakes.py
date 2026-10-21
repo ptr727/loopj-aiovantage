@@ -71,21 +71,24 @@ class FakeConfigConnection:
     """Stand-in for ConfigConnection that answers requests from a script.
 
     Args:
-        replies: The inbound XML documents, each returned by one readuntil() call.
+        replies: The inbound XML documents, each returned by one readuntil() call,
+            or an exception to raise in place of a reply.
     """
 
     host = "fake"
     port = 2001
     requires_authentication = False
 
-    def __init__(self, replies: list[str]) -> None:
+    def __init__(self, replies: list[str | BaseException]) -> None:
         """Initialize the fake with scripted replies."""
         self.replies = list(replies)
         self.written: list[str] = []
+        self.opens = 0
         self.closed = True
 
     async def open(self) -> None:
         """Mark the connection open."""
+        self.opens += 1
         self.closed = False
 
     def close(self) -> None:
@@ -101,7 +104,10 @@ class FakeConfigConnection:
 
     async def readuntil(self, separator: bytes, timeout: float | None = None) -> str:
         """Return the next scripted reply."""
-        return self.replies.pop(0)
+        reply = self.replies.pop(0)
+        if isinstance(reply, BaseException):
+            raise reply
+        return reply
 
 
 SYS_INFO_REPLY = (
