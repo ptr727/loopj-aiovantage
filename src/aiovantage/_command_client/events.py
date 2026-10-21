@@ -293,6 +293,11 @@ class EventStream(EventDispatcher):
 
             # If we get here, the connection was lost
             if connect_attempts == 1:
+                logger.info(
+                    "Lost connection to event stream at %s:%d",
+                    self._connection.host,
+                    self._connection.port,
+                )
                 self.emit(Disconnected())
 
             # Clear the command queue
