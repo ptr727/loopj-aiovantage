@@ -6,6 +6,7 @@ from types import TracebackType
 from typing import Any, Protocol, TypeVar
 
 from typing_extensions import Self, override
+from xsdata.exceptions import ParserError
 from xsdata.formats.converter import BoolConverter, DateTimeConverter, converter
 from xsdata.formats.dataclass.context import XmlContext
 from xsdata.formats.dataclass.parsers import XmlParser
@@ -170,7 +171,10 @@ class ConfigClient:
         )
 
         # Parse the response
-        response = self._parser.from_string(response_str, type(request))
+        try:
+            response = self._parser.from_string(response_str, type(request))
+        except ParserError as err:
+            raise ClientResponseError("Failed to parse response") from err
 
         # Extract the method response
         method_response: Method[Call, Return] | None = getattr(

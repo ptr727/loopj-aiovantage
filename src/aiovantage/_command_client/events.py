@@ -9,7 +9,7 @@ from typing import TypeVar
 from typing_extensions import Self
 
 from aiovantage._logger import logger
-from aiovantage.errors import ClientConnectionError, ClientError
+from aiovantage.errors import ClientConnectionError, ClientError, ClientResponseError
 from aiovantage.events import (
     Connected,
     Disconnected,
@@ -231,7 +231,15 @@ class EventStream(EventDispatcher):
 
                 # Wait for new messages, giving up if the connection falls silent
                 while True:
-                    message = await conn.readuntil(b"\r\n", READ_TIMEOUT)
+                    try:
+                        message = await conn.readuntil(b"\r\n", READ_TIMEOUT)
+                    except ClientResponseError as err:
+                        # The unreadable line was consumed, so the next one still lines up
+                        logger.warning(
+                            "Skipping unreadable event stream message: %s", err
+                        )
+                        continue
+
                     message = message.rstrip()
                     logger.debug("Received message: %s", message)
                     self._parse_message(message)

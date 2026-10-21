@@ -6,6 +6,7 @@ import pytest
 
 from aiovantage.command_client import CommandClient, CommandResponse
 from aiovantage.errors import (
+    ClientResponseError,
     ClientTimeoutError,
     CommandError,
     FailedError,
@@ -91,5 +92,18 @@ async def test_raw_request_closes_connection_on_cancel_and_reopens() -> None:
     assert conn.closed
 
     # The next request opens a fresh connection instead of reading the stale reply
+    assert await client.raw_request("VERSION") == ["R:VERSION 4.9.0.2"]
+    assert conn.opens == 2
+
+
+async def test_raw_request_closes_connection_on_unreadable_reply_and_reopens() -> None:
+    client, conn = make_client(ClientResponseError(), "R:VERSION 4.9.0.2")
+
+    # The rest of an unreadable reply may still be on the socket, so it is dropped
+    with pytest.raises(ClientResponseError):
+        await client.raw_request("VERSION")
+    assert conn.closed
+
+    # The next request opens a fresh connection instead of reading the leftover reply
     assert await client.raw_request("VERSION") == ["R:VERSION 4.9.0.2"]
     assert conn.opens == 2

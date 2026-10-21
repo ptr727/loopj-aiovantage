@@ -1,6 +1,9 @@
 """Tests for addressing and parsing RPC calls in ConfigClient."""
 
+import pytest
+
 from aiovantage.config_client import ConfigClient, ConfigurationInterface
+from aiovantage.errors import ClientResponseError
 from tests.fakes import FakeConfigConnection
 
 OPEN_FILTER_REPLY = """<IConfiguration>
@@ -41,3 +44,10 @@ async def test_rpc_parses_reply_from_another_master() -> None:
     client, _ = make_client("<?Master 2?>\n" + OPEN_FILTER_REPLY)
 
     assert await ConfigurationInterface.open_filter(client, "Load", master=2) == 7386048
+
+
+async def test_rpc_raises_response_error_on_malformed_reply() -> None:
+    client, _ = make_client("<IConfiguration><OpenFilter></IConfiguration>\n")
+
+    with pytest.raises(ClientResponseError):
+        await ConfigurationInterface.open_filter(client, "Load")

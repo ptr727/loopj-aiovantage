@@ -11,6 +11,7 @@ from typing_extensions import Self
 from aiovantage._logger import logger
 from aiovantage.errors import (
     ClientConnectionError,
+    ClientResponseError,
     CommandError,
     raise_command_error,
 )
@@ -172,8 +173,9 @@ class CommandClient:
                     response_lines.append(response_line)
                     if response_line.startswith("R:"):
                         break
-            except (ClientConnectionError, asyncio.CancelledError):
-                # Close the socket so the next request opens a fresh one rather than reusing it
+            except (ClientConnectionError, ClientResponseError, asyncio.CancelledError):
+                # Close the socket so the next request opens a fresh one rather than reading
+                # what is left of this reply
                 self._connection.close()
                 raise
 
