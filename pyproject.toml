@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aiovantage"
-version = "0.24.0.dev1"
+version = "0.24.0.dev2"
 description = "Interact with and control Vantage InFusion home automation controllers."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -28,18 +28,10 @@ Source = "https://github.com/loopj/aiovantage"
 [project.optional-dependencies]
 dev = [
     "pyright==1.1.414",
-    "ruff==0.16.10",
+    "ruff==0.17.1",
     "bumpver==2026.1132",
     "pytest==9.1.1",
     "pytest-asyncio==1.4.0",
-]
-
-docs = [
-    "mkdocstrings==1.0.6",
-    "mkdocstrings-python==2.0.9",
-    "mkdocs==1.6.1",
-    "mkdocs-material==9.7.7",
-    "mkdocs-api-autonav==0.4.0",
 ]
 
 [tool.ruff.lint]
@@ -85,7 +77,7 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.bumpver]
-current_version = "0.23.2"
+current_version = "0.23.4"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "Bump version {old_version} -> {new_version}"
 commit = true
