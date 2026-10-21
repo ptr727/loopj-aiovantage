@@ -218,3 +218,20 @@ async def test_trigger_type_property_names_known_codes_only() -> None:
         TriggerType.MODULE_ALERT
     )
     assert TriggerReceived(100, 200, 99, 0, 0).trigger_type is None
+
+
+async def test_unsubscribe_triggers_stops_the_event_log_once_unused() -> None:
+    stream = EventStream("fake")
+    received: list[TriggerReceived] = []
+    unsubscribe = stream.subscribe_triggers(received.append)
+    unsubscribe_other = stream.subscribe_triggers(lambda _: None)
+    queued(stream)
+
+    # The log stays on while another subscriber still wants it
+    unsubscribe()
+    assert queued(stream) == []
+    feed(stream, "EL: 100 200 7 0 0")
+    assert received == []
+
+    unsubscribe_other()
+    assert queued(stream) == ["ELLOG EVENT OFF"]

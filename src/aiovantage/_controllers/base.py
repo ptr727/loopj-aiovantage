@@ -247,7 +247,7 @@ class Controller(QuerySet[T], EventDispatcher):
         # -> EL: <vid> <method> <result> <arg1> <arg2> ...
         # Other log types, eg. EVENT and SYSTEM, can share the stream, so skip them.
         tokens = Converter.tokenize(event.log)
-        if len(tokens) < 3 or not tokens[0].isdigit() or "." not in tokens[1]:
+        if len(tokens) < 3 or not tokens[0].isdecimal() or "." not in tokens[1]:
             return
 
         vid_str, method, result, *args = tokens

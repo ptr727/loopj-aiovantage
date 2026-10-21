@@ -22,11 +22,10 @@ from ._config_client.interfaces.diagnostic import (
     EventLogEntry,
     ModuleInfo,
     SysLogEntry,
-    SysLogType,
-    TriggerType,
 )
 from ._config_client.interfaces.introspection import IntrospectionInterface
 from ._config_client.interfaces.login import LoginInterface
+from ._log_types import SysLogType, TriggerType
 
 __all__ = [
     "ConfigClient",

@@ -5,7 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
-from aiovantage._config_client.interfaces.diagnostic import SysLogType, TriggerType
+from aiovantage._log_types import SysLogType, TriggerType
 
 T = TypeVar("T")
 
@@ -99,7 +99,10 @@ class EnhancedLogReceived:
 
 @dataclass
 class TriggerReceived:
-    """Event emitted when an object triggers a task, from the "EVENT" enhanced log."""
+    """An object triggering a task, from the "EVENT" enhanced log.
+
+    Passed to the callbacks of `EventStream.subscribe_triggers`, rather than emitted.
+    """
 
     source: int
     """The VID of the object that fired, eg. a button, timer or sensor."""
@@ -120,6 +123,9 @@ class TriggerReceived:
     def parse(cls, log: str) -> "TriggerReceived | None":
         """Parse an "EVENT" enhanced log of the form "<src> <dst> <event> <p1> <p2>".
 
+        Enhanced logs carry no type tag, so any five integer log parses as a trigger.
+        Only pass it logs from a stream that writes no other all-numeric log type.
+
         Returns:
             The trigger, or None if the log is not a trigger log.
         """
@@ -133,7 +139,7 @@ class TriggerReceived:
             return None
 
     @property
-    def trigger_type(self) -> "TriggerType | None":
+    def trigger_type(self) -> TriggerType | None:
         """The type of the trigger, if known."""
         try:
             return TriggerType(self.event)
@@ -143,7 +149,10 @@ class TriggerReceived:
 
 @dataclass
 class SystemLogReceived:
-    """Event emitted when a system log is received, from the "SYSTEM" enhanced log."""
+    """A system log, from the "SYSTEM" enhanced log.
+
+    Passed to the callbacks of `EventStream.subscribe_system_log`, rather than emitted.
+    """
 
     type: int
     """The type of the log, see `aiovantage.config_client.SysLogType`."""
@@ -158,6 +167,9 @@ class SystemLogReceived:
     def parse(cls, log: str) -> "SystemLogReceived | None":
         """Parse a "SYSTEM" enhanced log of the form "<type> <source> <message>".
 
+        The source is taken to be one word, as the controller writes it, eg.
+        "Controller".
+
         Returns:
             The system log, or None if the log is not a system log.
         """
@@ -165,13 +177,13 @@ class SystemLogReceived:
 
         # Enhanced logs carry no type tag, so tell them apart by shape: object
         # status logs carry an "Interface.Method", and trigger logs are all numeric
-        if not log_type.isdigit() or not source or "." in source or _is_int(source):
+        if not log_type.isdecimal() or not source or "." in source or _is_int(source):
             return None
 
         return cls(int(log_type), source, message.strip())
 
     @property
-    def log_type(self) -> "SysLogType | None":
+    def log_type(self) -> SysLogType | None:
         """The type of the log, if known."""
         try:
             return SysLogType(self.type)
