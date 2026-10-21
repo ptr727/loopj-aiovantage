@@ -1,5 +1,9 @@
 """Fakes shared across tests."""
 
+import asyncio
+
+from aiovantage.errors import ClientConnectionError
+
 
 class FakeCommandClient:
     """Stand-in for CommandClient that answers requests from a script.
@@ -106,11 +110,14 @@ class FakeConfigConnection:
         """Accept any credentials."""
 
     async def write(self, message: str) -> None:
-        """Record an outbound request."""
+        """Record an outbound request, failing like the real connection once closed."""
+        if self.closed:
+            raise ClientConnectionError("Client not connected.")
         self.written.append(message)
 
     async def readuntil(self, separator: bytes, timeout: float | None = None) -> str:
-        """Return the next scripted reply."""
+        """Return the next scripted reply, letting other tasks run first like a real read."""
+        await asyncio.sleep(0)
         reply = self.replies.pop(0)
         if isinstance(reply, BaseException):
             raise reply

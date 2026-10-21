@@ -89,3 +89,18 @@ async def test_rpc_closes_connection_when_setup_fails_and_reopens() -> None:
     # The next request sets up a fresh connection
     assert await ConfigurationInterface.open_filter(client, "Load") == 7386048
     assert conn.opens == 2
+
+
+async def test_rpc_queued_behind_a_timeout_uses_a_fresh_connection() -> None:
+    client, conn = make_client(ClientTimeoutError(), OPEN_FILTER_REPLY)
+
+    # The second request waits for the first, which times out and closes the socket
+    first, second = await asyncio.gather(
+        ConfigurationInterface.open_filter(client, "Load"),
+        ConfigurationInterface.open_filter(client, "Load"),
+        return_exceptions=True,
+    )
+
+    assert isinstance(first, ClientTimeoutError)
+    assert second == 7386048
+    assert conn.opens == 2

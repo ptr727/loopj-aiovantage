@@ -125,12 +125,13 @@ class ConfigClient:
         Returns:
             The raw XML response.
         """
-        # Open the connection if it's closed
-        conn = await self._get_connection()
-
-        # Send the request and read the response
         logger.debug("Sending request: %s", request)
         async with self._request_lock:
+            # Open the connection if it's closed, once any earlier request is done
+            # with it, since a failed request closes it
+            conn = await self._get_connection()
+
+            # Send the request and read the response
             try:
                 await conn.write(request)
                 response = await conn.readuntil(separator.encode(), self._read_timeout)
