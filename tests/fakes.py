@@ -65,9 +65,14 @@ class FakeCommandConnection:
         self.written.append(message)
 
     async def readuntil(self, separator: bytes, timeout: float | None = None) -> str:
-        """Return the next scripted line, letting other tasks run first like a real read."""
+        """Return the next scripted line, letting other tasks run first like a real read.
+
+        Once the script runs out, wait like a quiet connection until canceled.
+        """
         await asyncio.sleep(0)
         self.timeouts.append(timeout)
+        if not self.lines:
+            await asyncio.Event().wait()
         line = self.lines.pop(0)
         if isinstance(line, BaseException):
             raise line

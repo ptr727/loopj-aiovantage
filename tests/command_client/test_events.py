@@ -108,9 +108,11 @@ async def test_message_handler_skips_an_unreadable_line() -> None:
 
     task = asyncio.create_task(stream._message_handler())  # type: ignore[reportPrivateUsage]
     await asyncio.sleep(0.05)
-    task.cancel()
 
-    # The line after the unreadable one is still read, on the same connection
+    # The line after the unreadable one is still read, on the same connection, and
+    # the handler goes on waiting for more
+    assert not task.done()
+    task.cancel()
     assert [type(event) for event in events] == [StatusReceived]
     assert conn.opens == 1
 
