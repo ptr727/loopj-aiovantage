@@ -124,7 +124,7 @@ class TriggerReceived:
         """Parse an "EVENT" enhanced log of the form "<src> <dst> <event> <p1> <p2>".
 
         Enhanced logs carry no type tag, so any five integer log parses as a trigger.
-        Only pass this logs from a stream that writes no other all-numeric log type.
+        Only pass it logs from a stream that writes no other all-numeric log type.
 
         Returns:
             The trigger, or None if the log is not a trigger log.
