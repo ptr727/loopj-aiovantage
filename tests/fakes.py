@@ -82,7 +82,10 @@ class FakeCommandConnection:
 class UnreadableLoginConnection(FakeCommandConnection):
     """A connection whose first login reply cannot be read."""
 
-    logins = 0
+    def __init__(self, lines: list[str | BaseException]) -> None:
+        """Initialize the fake, counting this connection's logins from zero."""
+        super().__init__(lines)
+        self.logins = 0
 
     async def authenticate(self, username: str, password: str) -> None:
         """Fail the first login with an unreadable reply."""
