@@ -173,11 +173,15 @@ class SystemLogReceived:
         Returns:
             The system log, or None if the log is not a system log.
         """
-        log_type, source, message = (log.split(maxsplit=2) + ["", "", ""])[:3]
+        tokens = log.split(maxsplit=2)
+        if len(tokens) != 3:
+            return None
+
+        log_type, source, message = tokens
 
         # Enhanced logs carry no type tag, so tell them apart by shape: object
         # status logs carry an "Interface.Method", and trigger logs are all numeric
-        if not log_type.isdecimal() or not source or "." in source or _is_int(source):
+        if not log_type.isdecimal() or "." in source or _is_int(source):
             return None
 
         return cls(int(log_type), source, message.strip())

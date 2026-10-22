@@ -212,6 +212,12 @@ async def test_system_log_parse_tolerates_extra_whitespace() -> None:
     assert parsed.log_type is SysLogType.WARNING
 
 
+async def test_system_log_parse_rejects_a_log_with_no_message() -> None:
+    assert SystemLogReceived.parse("3 Controller") is None
+    assert SystemLogReceived.parse("3 Controller   ") is None
+    assert SystemLogReceived.parse("3") is None
+
+
 async def test_trigger_type_property_names_known_codes_only() -> None:
     assert TriggerReceived(100, 200, 0, 1, 0).trigger_type is TriggerType.BUTTON_UP
     assert TriggerReceived(120, 300, 0xA004, 1, 0).trigger_type is (
