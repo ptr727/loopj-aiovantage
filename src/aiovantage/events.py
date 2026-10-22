@@ -123,7 +123,7 @@ class TriggerReceived:
     def parse(cls, log: str) -> "TriggerReceived | None":
         """Parse an "EVENT" enhanced log of the form "<src> <dst> <event> <p1> <p2>".
 
-        Enhanced logs carry no type tag, so any five integer log parses as a trigger.
+        Enhanced logs carry no type tag, so any five-integer log parses as a trigger.
         Only pass it logs from a stream that writes no other all-numeric log type.
 
         Returns:
